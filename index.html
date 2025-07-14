@@ -4,123 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BDO Enhancement Calculator</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #1a1a1a;
-            color: #e0e0e0;
-        }
-        .container {
-            background-color: #2d2d2d;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #ffffff;
-        }
-        select, input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #444;
-            border-radius: 4px;
-            box-sizing: border-box;
-            background-color: #3d3d3d;
-            color: #ffffff;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .result {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #3d3d3d;
-            border-radius: 4px;
-            color: #ffffff;
-        }
-        .tries-result {
-            margin-top: 20px;
-            font-weight: bold;
-            background-color: #333;
-            padding: 15px;
-            border-left: 4px solid #4CAF50;
-        }
-        h1 {
-            color: #4CAF50;
-            margin-top: 0;
-        }
-        .result-line {
-            margin: 5px 0;
-        }
-        .info-icon {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            background-color: #4CAF50;
-            color: white;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 16px;
-            font-size: 12px;
-            cursor: help;
-            margin-left: 5px;
-        }
-        .tooltip {
-            position: relative;
-            display: inline-block;
-        }
-        .tooltip .tooltiptext {
-            visibility: hidden;
-            width: 300px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 10px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-weight: normal;
-            font-size: 14px;
-        }
-        .tooltip:hover .tooltiptext {
-            visibility: visible;
-            opacity: 1;
-        }
-		
-		footer {
-            text-align: center;
-            margin-top: auto;
-            padding: 10px;
-            font-size: 14px;
-            color: #666;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<div class="main-wrapper">
     <div class="container">
         <h1>BDO Enhancement Calculator</h1>
         
@@ -156,11 +43,15 @@
             <input type="number" id="failstack" min="0" value="0">
         </div>
         
-        <div class="form-group">
+        <div class="form-group-half">
             <label>Cron Stones per Attempt:</label>
             <div class="result" id="cronCost">0</div>
         </div>
-        
+        <div class="form-group-half">
+            <label>Pity Count:</label>
+            <div class="result" id="pityCount">—</div>
+        </div>
+
         <div class="form-group">
             <label>Enhancement Chance:</label>
             <div class="result" id="enhanceChance">0%</div>
@@ -171,222 +62,188 @@
             <div class="result" id="avgSuccessRate">0</div>
         </div>
         
-        <div class="form-group">
-            <label class="tooltip">Real Average Attempts (with failstack growth):
-                <span class="info-icon">i</span>
-                <span class="tooltiptext">
-                    This is calculated using a Monte Carlo simulation (1000 trials) that accounts for increasing failstacks on each failed attempt. 
-                    Each trial simulates the enhancement process until success, tracking how many attempts were needed. 
-                    The average of all trials gives this more accurate estimate compared to the theoretical average.
-                </span>
-            </label>
-            <div class="result" id="realAvgSuccessRate">0</div>
-        </div>
+<div class="form-group">
+    <label style="display: flex; align-items: center; gap: 8px;">
+        Real Average Attempts (with failstack growth)
+        <span class="info-icon" tabindex="0">i
+        <span class="tooltiptext">
+            <b>How is Real Average Attempts calculated?</b><br><br>
+            The real average is the mathematical mean number of tries to succeed, taking into account both your failstack growth and the pity system (if enabled).<br><br>
+            The calculation uses a recursive formula:
+            <ul style="margin:8px 0 8px 20px;padding:0;">
+            <li><b>Without pity</b> (pity unchecked):<br>
+                <span style="display:inline-block;margin-left:1em;">E(f) = 1 + (1 - P(f)) × E(f+1)</span><br>
+                This models infinite attempts, so you could theoretically fail forever (very unlikely in practice).
+            </li>
+            <li style="margin-top:8px;"><b>With pity</b> (pity checked):<br>
+                <span style="display:inline-block;margin-left:1em;">
+                    If you reach the pity cap, E(f) = 1 (guaranteed success on next attempt);<br>
+                    otherwise, E(f) = 1 + (1 - P(f)) × E(f+1)
+                </span><br>
+                This guarantees you can never exceed the pity cap in your attempts.
+            </li>
+            </ul>
+            Where:<br>
+            <span style="display:inline-block;margin-left:1em;">E(f)</span> = expected attempts starting from failstack <b>f</b><br>
+            <span style="display:inline-block;margin-left:1em;">P(f)</span> = chance to succeed at failstack <b>f</b><br><br>
+            <b>Which is used?</b><br>
+            - When <b>“Include pity”</b> is checked, the calculator uses the version with pity.<br>
+            - When unchecked, it uses the pure probability version (no pity cap).
+        </span>
+        </span>
+        <span class="tooltip" style="font-weight:normal; margin-left: 10px; display: flex; align-items: center;">
+            <input type="checkbox" id="includePityCheckbox" checked style="vertical-align:middle; margin-right:4px;">
+            Include pity
+            <span class="tooltiptext">
+                When checked, the real average includes the game's pity system (guaranteed success after a fixed number of attempts).<br><br>
+                When unchecked, the average is calculated as if there is no pity (just pure chance and failstacks).<br><br>
+            </span>
+        </span>
+    </label>
+    <div class="result" id="realAvgSuccessRate">0</div>
+</div>
         
         <div class="form-group">
             <label>Estimated Total Cron Stones:</label>
             <div class="result" id="estimatedCrons">0</div>
         </div>
-        
-        <button id="enhanceButton">Enhance</button>
-        
+
+        <div class="form-group">
+            <label>Material Cost (average):</label>
+            <div class="result" id="avgMatCosts">
+                Memory Fragments: --<br>
+                Essence of Dawn: --
+            </div>
+        </div>
+
+        <div class="actions-row">
+            <button id="enhanceButton">Enhance</button>
+            <label class="log-checkbox tooltip">
+                <input type="checkbox" id="logAttempts">
+                <span>Log events</span>
+                <span class="info-icon" tabindex="0">i</span>
+                <span class="tooltiptext">
+                    Logs each enhancement attempt to browser console<br><br>
+                    (Press F12 → Console to view)<br>
+                    Shows: Attempt number, Success chance,<br>
+                    Current failstack, and Roll result
+                </span>
+            </label>
+            <button id="compoundButton" class="compound-btn" type="button">Compound Enhancing</button>
+        </div>
+
         <div class="result tries-result" id="triesResult" style="display: none;">
             <div class="result-line">Number of tries needed to succeed: <span id="triesNeeded">0</span></div>
             <div class="result-line">Final failstack count: <span id="finalFailstacks">0</span></div>
             <div class="result-line">Final success chance: <span id="finalSuccessChance">0%</span></div>
             <div class="result-line">Total cron stones used: <span id="totalCronsUsed">0</span></div>
+            <div class="result-line" id="materialCostLine"></div>
         </div>
     </div>
-	<footer>Made by Rogu14 and DeepSeek AI xD. Version 1.0.0 <br>
-	<a href="https://rogu14.github.io/fsoptimizer/failstack.html">Best fail stack calculator</a></footer>
-    <script>
-        // Base success rates
-        const successRates = {
-            sovereign: [8.5500, 4.1200, 2.0000, 0.9100, 0.4690, 0.2730, 0.1600, 0.1075, 0.0485, 0.0242],
-            kharazad: [16.3000, 7.3000, 4.5700, 2.8900, 1.9100, 1.2900, 0.8800, 0.5700, 0.3200, 0.1720],
-            fallen: [0, 0, 0, 0, 0.0025] // Only V matters for Fallen God
-        };
 
-        // Cron stone costs (I doesn't use crons, so shifted by one)
-        const cronCosts = {
-            sovereign: [0, 320, 560, 780, 970, 1350, 1550, 2250, 2760, 3920],
-            kharazad: [0, 120, 280, 540, 840, 1090, 1480, 1880, 2850, 3650],
-            fallen: [0, 0, 0, 0, 4000] // Only V (4000 crons) for Fallen God
-        };
+    <div class="side-settings">
+        <h2>Cost Settings</h2>
+        <div class="form-group">
+            <label for="cronStoneSource">Cron Stone Source:</label>
+            <select id="cronStoneSource">
+                <option value="vendor">Vendor crons: 3,000,000 silver</option>
+                <option value="costume">Costume crons: 2,185,000 silver</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="memFragPrice">Memory Fragment Price (ea):</label>
+            <input type="number" id="memFragPrice" min="0" step="100000" value="4500000">
+        </div>
+        <div class="form-group">
+            <label for="essencePrice">Essence of Dawn Price (ea):</label>
+            <input type="number" id="essencePrice" min="0" step="500000" value="100000000">
+        </div>
+    </div>
+</div>
 
-        // DOM elements
-        const itemTypeSelect = document.getElementById('itemType');
-        const enhanceLevelSelect = document.getElementById('enhanceLevel');
-        const failstackInput = document.getElementById('failstack');
-        const cronCostDisplay = document.getElementById('cronCost');
-        const estimatedCronsDisplay = document.getElementById('estimatedCrons');
-        const enhanceChanceDisplay = document.getElementById('enhanceChance');
-        const avgSuccessRateDisplay = document.getElementById('avgSuccessRate');
-        const realAvgSuccessRateDisplay = document.getElementById('realAvgSuccessRate');
-        const triesResult = document.getElementById('triesResult');
-        const triesNeededSpan = document.getElementById('triesNeeded');
-        const finalFailstacksSpan = document.getElementById('finalFailstacks');
-        const finalSuccessChanceSpan = document.getElementById('finalSuccessChance');
-        const totalCronsUsedSpan = document.getElementById('totalCronsUsed');
+<!-- Compound Enhancing Section -->
+<div id="compoundSection" style="display:none;">
+    <h2>Compound Enhancing Calculator</h2>
+    <div class="form-group">
+        <label for="compoundItemType">Item Type:</label>
+        <select id="compoundItemType">
+            <option value="">-- Select Item Type --</option>
+            <option value="kharazad">Kharazad Accessories</option>
+            <option value="sovereign">Sovereign Weapons</option>
+            <!-- No PEN Fallen God Armor here -->
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="compoundStartLevel">Starting Level:</label>
+        <select id="compoundStartLevel">
+            <option value="">-- Select Level --</option>
+            <option value="1">I</option>
+            <option value="2">II</option>
+            <option value="3">III</option>
+            <option value="4">IV</option>
+            <option value="5">V</option>
+            <option value="6">VI</option>
+            <option value="7">VII</option>
+            <option value="8">VIII</option>
+            <option value="9">IX</option>
+            <option value="10">X</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="compoundEndLevel">Finish Level:</label>
+        <select id="compoundEndLevel">
+            <option value="">-- Select Level --</option>
+            <option value="1">I</option>
+            <option value="2">II</option>
+            <option value="3">III</option>
+            <option value="4">IV</option>
+            <option value="5">V</option>
+            <option value="6">VI</option>
+            <option value="7">VII</option>
+            <option value="8">VIII</option>
+            <option value="9">IX</option>
+            <option value="10">X</option>
+        </select>
+    </div>
+    <!-- Per-level failstack fields, generated dynamically -->
+ <div id="compoundFailstacksGroup" class="form-group" style="display:none;">
+        <label>Failstacks for Each Level:</label>
+        <div id="compoundFailstacksInputs"></div>
+    </div>
 
-        // Handle item type change to auto-select V for Fallen God
-        itemTypeSelect.addEventListener('change', function() {
-            if (this.value === 'fallen') {
-                enhanceLevelSelect.value = '5';
-                enhanceLevelSelect.disabled = true;
-            } else {
-                enhanceLevelSelect.disabled = false;
-            }
-            updateCalculations();
-        });
+    <!-- Compound Options Row (formatted with flex for perfect alignment) -->
+    <div class="form-group" style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">
+        <button id="useRecommendedFS" type="button">Use recommended failstacks</button>
+        <span class="tooltip" style="font-weight:normal; display:flex; align-items:center;">
+            <input type="checkbox" id="compoundIncludePityCheckbox" checked style="vertical-align:middle; margin-right:4px;">
+            Include pity
+            <span class="tooltiptext">
+                When checked, the calculation includes the pity system (guaranteed success after a set number of failed attempts) for each enhancement step.<br><br>
+                When unchecked, the total average is calculated as if pity does not exist.<br><br>
+            </span>
+        </span>
+        <button id="calculateCompound" type="button" style="margin-left:auto;">Calculate Total Cost</button>
+    </div>
 
-        // Calculate enhancement chance with the real formula
-        function calculateEnhancementChance(baseRate, failstacks) {
-            // Real enhancement formula: Base Rate + (Failstacks * (Base Rate / 10))
-            return baseRate + (failstacks * (baseRate / 10));
-        }
+    <div id="compoundResult" class="result" style="display:none; margin-top:20px;"></div>
 
-        // Calculate theoretical average (without failstack growth)
-        function calculateTheoreticalAverage(successChance) {
-            return 1 / (successChance / 100);
-        }
+    <button id="backToSingle" type="button" style="margin-top: 18px;">Back to Single Enhancing</button>
+</div>
 
-        // Calculate real average (with failstack growth)
-        function calculateRealAverage(baseRate, initialFailstacks, cronCost) {
-            let totalAttempts = 0;
-            let currentFailstacks = initialFailstacks;
-            const maxIterations = 1000000; // Safety limit
-            
-            for (let i = 0; i < maxIterations; i++) {
-                const currentChance = calculateEnhancementChance(baseRate, currentFailstacks);
-                totalAttempts++;
-                
-                // Check if we succeeded
-                if (Math.random() * 100 <= currentChance) {
-                    return {
-                        attempts: totalAttempts,
-                        totalCrons: totalAttempts * cronCost,
-                        finalChance: currentChance
-                    };
-                }
-                
-                // If failed, increase failstack
-                currentFailstacks++;
-            }
-            
-            return {
-                attempts: totalAttempts,
-                totalCrons: totalAttempts * cronCost,
-                finalChance: calculateEnhancementChance(baseRate, currentFailstacks)
-            };
-        }
+<footer class="footer">
+    Made by Rogu14. Version 2.0<br><br><br>
+    Version 2.0 changes : <br><br>
+    - Reworked whole real average formula<br>
+    - Added option to include or exclude pity from calculations<br>
+    - Added Compound Enhancing to check overall costs based on real averages<br>
+    - Added cost of Memory Fragments and Essences of Dawns to calculations<br>
+    - Displaying pity caps now<br>
+    - Added event log for simulations<br>
 
-        // Update all calculations
-        function updateCalculations() {
-            const itemType = itemTypeSelect.value;
-            const enhanceLevel = enhanceLevelSelect.value;
-            const failstacks = parseInt(failstackInput.value) || 0;
-            
-            if (!itemType || !enhanceLevel) {
-                cronCostDisplay.textContent = '0';
-                estimatedCronsDisplay.textContent = '0';
-                enhanceChanceDisplay.textContent = '0%';
-                avgSuccessRateDisplay.textContent = '0';
-                realAvgSuccessRateDisplay.textContent = '0';
-                return;
-            }
-            
-            const levelIndex = parseInt(enhanceLevel) - 1;
-            const baseRate = successRates[itemType][levelIndex];
-            const cronCost = cronCosts[itemType][levelIndex];
-            const successChance = calculateEnhancementChance(baseRate, failstacks);
-            
-            // Update displays
-            cronCostDisplay.textContent = cronCost.toLocaleString();
-            enhanceChanceDisplay.textContent = successChance.toFixed(4) + '%';
-            
-            // Theoretical average
-            const theoreticalAvg = calculateTheoreticalAverage(successChance);
-            avgSuccessRateDisplay.textContent = theoreticalAvg.toFixed(2);
-            
-            // Calculate real average with Monte Carlo simulation (1000 trials)
-            let realAvgSum = 0;
-            let cronSum = 0;
-            const trials = 1000;
-            for (let i = 0; i < trials; i++) {
-                const result = calculateRealAverage(baseRate, failstacks, cronCost);
-                realAvgSum += result.attempts;
-                cronSum += result.totalCrons;
-            }
-            
-            const realAvgAttempts = realAvgSum / trials;
-            realAvgSuccessRateDisplay.textContent = realAvgAttempts.toFixed(2);
-            
-            // Round to nearest whole attempt for cron estimate
-            const roundedAttempts = Math.round(realAvgAttempts);
-            estimatedCronsDisplay.textContent = (roundedAttempts * cronCost).toLocaleString();
-        }
+   <b>Disclaimer : Use your own judgment, I am not guaranteeing the calculator to be 100% correct. User discretion is advised</b>
 
-        // Simulate single enhancement attempt
-        function simulateEnhancement() {
-            const itemType = itemTypeSelect.value;
-            const enhanceLevel = enhanceLevelSelect.value;
-            let failstacks = parseInt(failstackInput.value) || 0;
-            let initialFailstacks = failstacks;
-            
-            if (!itemType || !enhanceLevel) {
-                alert('Please select both item type and enhancement level');
-                return { 
-                    tries: 0, 
-                    finalFailstacks: initialFailstacks,
-                    finalChance: 0,
-                    totalCrons: 0
-                };
-            }
-            
-            const levelIndex = parseInt(enhanceLevel) - 1;
-            const baseRate = successRates[itemType][levelIndex];
-            const cronCost = cronCosts[itemType][levelIndex];
-            let tries = 0;
-            let totalCrons = 0;
-            let finalChance = 0;
-            
-            while (true) {
-                tries++;
-                totalCrons += cronCost;
-                const currentChance = calculateEnhancementChance(baseRate, failstacks);
-                
-                if (Math.random() * 100 <= currentChance) {
-                    finalChance = currentChance;
-                    break; // Success!
-                }
-                
-                failstacks++; // Increase failstack on failure
-            }
-            
-            return { 
-                tries, 
-                finalFailstacks: failstacks,
-                finalChance,
-                totalCrons 
-            };
-        }
+</footer>
 
-        // Event listeners
-        enhanceLevelSelect.addEventListener('change', updateCalculations);
-        failstackInput.addEventListener('input', updateCalculations);
-
-        document.getElementById('enhanceButton').addEventListener('click', function() {
-            const result = simulateEnhancement();
-            triesNeededSpan.textContent = result.tries;
-            finalFailstacksSpan.textContent = result.finalFailstacks;
-            finalSuccessChanceSpan.textContent = result.finalChance.toFixed(4) + '%';
-            totalCronsUsedSpan.textContent = result.totalCrons.toLocaleString();
-            triesResult.style.display = 'block';
-        });
-
-        // Initialize
-        updateCalculations();
-    </script>
+<script src="script.js"></script>
 </body>
 </html>
